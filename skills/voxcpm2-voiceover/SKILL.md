@@ -75,7 +75,7 @@ $PY <skill-dir>/scripts/finish.py takes/s1_seed7.wav takes/s2_seed21.wav --join 
 | "ใส่อารมณ์ร่าเริง / เศร้า / ตื่นเต้น" | `--no-transcript --style "<ถ้อยคำจาก references/pacing-and-emotions.md>"` หรือใส่ `(คำสั่ง)` ต้นบรรทัด |
 | "พากย์อังกฤษด้วยเสียงเดิม" | `--no-transcript` (reference ภาษาไทยก็ใช้ได้) |
 | "ยังไม่มีเสียง ออกแบบเสียงให้หน่อย" | `--design "..." --seeds 1,2,3,4` แล้วทำเป็น reference ตามขั้นที่ 1 |
-| "บรรทัด 3 อ่านผิด", "ขอบรรทัด 3 ใหม่" | แก้ตัวสะกดของบรรทัดนั้น แล้วรัน `--only 3 --seeds 3,4` (take ของบรรทัดอื่นยังอยู่) |
+| "บรรทัด 3 อ่านผิด", "ขอบรรทัด 3 ใหม่" | ลอง seed อื่นก่อน (`--only 3 --seeds 3,4`) ถ้าผิดทุก take ให้แก้ตัวสะกดของบรรทัดนั้น ลำดับการแก้เต็มอยู่ใน `knowledge/fixing-mispronunciation.md` ของ repo |
 | "ช้าไป", "เร็วไป" | `finish.py --tempo` (ไม่ต่ำกว่า 0.85) หรือเปลี่ยน reference |
 | "ต่อเป็นไฟล์เดียว" | `finish.py ... --join out/narration.m4a` |
 | "แยกไฟล์ต่อ scene ไว้ตัดต่อ" | `finish.py ... --out final` |
@@ -111,6 +111,7 @@ Notes: first take was slow (MPS warm-up); tempo 0.90 also stretches the gaps to 
 - transcript ของ reference ไม่ตรงทุกคำ เสียงจะเพี้ยน → `gotchas.md` ข้อ 2
 - CER สูงหลอกจากคำอ่านตัวเลข ตัวสะกดที่ใช้ได้สองแบบ และชื่ออังกฤษ → `gotchas.md` ข้อ 3
 - `Copilot` อ่านผิด และ `@` ไม่ถูกอ่าน → `gotchas.md` ข้อ 4
+- `normalize=True` แปลงตัวเลขในข้อความไทยเป็นคำอ่านภาษาอังกฤษ → `gotchas.md` ข้อ 10
 - ตั้ง `HF_HUB_OFFLINE=1` ก่อนโหลด weights แล้วจะ error → `gotchas.md` ข้อ 5
 - reference สังเคราะห์ที่ตั้งชื่อเหมือนเสียงคน → `gotchas.md` ข้อ 6
 - รันหลาย process พร้อมกันจะกินหน่วยความจำ process ละ 14 GB → `gotchas.md` ข้อ 8
