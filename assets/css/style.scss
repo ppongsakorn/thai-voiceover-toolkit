@@ -1,0 +1,14 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+body {
+  font-family: "Anuphan", "Noto Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  line-height: 1.75;
+}
+
+.main-content table {
+  display: block;
+  overflow-x: auto;
+}

@@ -1,0 +1,19 @@
+title: Thai Voiceover Toolkit
+description: งานค้นคว้า เกณฑ์ทดสอบ และเครื่องมือสำหรับพากย์เสียงและโคลนเสียงด้วย AI เน้นภาษาไทย
+lang: th
+theme: jekyll-theme-cayman
+
+plugins:
+  - jekyll-relative-links
+  - jekyll-readme-index
+  - jekyll-optional-front-matter
+  - jekyll-titles-from-headings
+  - jekyll-default-layout
+
+relative_links:
+  enabled: true
+  collections: false
+
+exclude:
+  - .gitignore
+  - .github/
