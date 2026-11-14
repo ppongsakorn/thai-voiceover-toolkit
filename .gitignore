@@ -1,0 +1,32 @@
+# secrets
+.env
+.env.*
+*.key
+secrets/
+
+# voice samples and generated audio stay out of the repo
+voices/
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
+out/
+outputs/
+
+# model weights and caches
+*.safetensors
+*.pth
+*.ckpt
+*.gguf
+models/
+.cache/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# macOS
+.DS_Store

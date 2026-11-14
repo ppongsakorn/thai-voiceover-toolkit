@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI พากย์เสียงและโคลนเสียง ไทย อังกฤษ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Prompt:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* layout: bright pastel header with the verdict, sticky section tabs, then stacked sections made of cards; long text is cut into short labelled rows */
+:root{
+  --bg:#f8f9fe; --surface:#ffffff; --sunk:#eef1fa; --ink:#1a1f36; --muted:#5d6685; --line:#dfe4f2;
+  --accent:#e6246f; --accent-soft:#ffe6f0;
+  --c1:#e6246f; --c2:#f2711c; --c3:#0a9bd6; --c4:#0fa573; --c5:#7a4ff0; --c6:#d08a00; --on-sec:#ffffff;
+  --good:#127a4b; --good-soft:#dff3e8; --warn:#9a5b00; --warn-soft:#fff1d1; --bad:#b3261e; --bad-soft:#fde5e2;
+  --h1:#ffe3ee; --h2:#fff1d6; --h3:#dff4ff; --shadow:0 1px 6px rgba(40,50,110,.05);
+  --display:"Prompt","Anuphan","Noto Sans Thai",system-ui,sans-serif;
+  --body:"Anuphan","Noto Sans Thai","Leelawadee UI","Thonburi",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101426; --surface:#191f38; --sunk:#222a4a; --ink:#eef0fa; --muted:#a2abc8; --line:#2e3760;
+    --accent:#ff6fa5; --accent-soft:#3a1a2e;
+    --c1:#ff6fa5; --c2:#ff9a52; --c3:#4cc3f5; --c4:#3fd6a0; --c5:#a78bff; --c6:#ffcf4a; --on-sec:#101426;
+    --good:#5fd09a; --good-soft:#123324; --warn:#f0b455; --warn-soft:#3a2c0d; --bad:#ff8a80; --bad-soft:#3d1715;
+    --h1:#3a1535; --h2:#2a1f4a; --h3:#10304a; --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#101426; --surface:#191f38; --sunk:#222a4a; --ink:#eef0fa; --muted:#a2abc8; --line:#2e3760;
+    --accent:#ff6fa5; --accent-soft:#3a1a2e;
+    --c1:#ff6fa5; --c2:#ff9a52; --c3:#4cc3f5; --c4:#3fd6a0; --c5:#a78bff; --c6:#ffcf4a; --on-sec:#101426;
+    --good:#5fd09a; --good-soft:#123324; --warn:#f0b455; --warn-soft:#3a2c0d; --bad:#ff8a80; --bad-soft:#3d1715;
+    --h1:#3a1535; --h2:#2a1f4a; --h3:#10304a; --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.75}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+code{font-family:var(--mono);font-size:.86em;background:var(--sunk);padding:1px 6px;border-radius:4px;word-break:break-word}
+strong{font-weight:600}
+.in{max-width:1120px;margin:0 auto;padding:0 20px}
+
+/* header */
+header{border-bottom:1px solid var(--line);background:radial-gradient(60% 90% at 8% 0%,var(--h1),transparent 70%),radial-gradient(50% 80% at 55% 10%,var(--h2),transparent 70%),radial-gradient(55% 100% at 100% 30%,var(--h3),transparent 70%),var(--bg);color:var(--ink);padding:64px 0 44px}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rec{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff5a52}
+h1{font-family:var(--display);font-weight:300;letter-spacing:-.02em;font-size:clamp(30px,5.4vw,58px);line-height:1.25;margin:0 0 14px;text-wrap:balance;max-width:20em}
+.answer{font-size:18px;line-height:1.7;color:var(--muted);max-width:44em;margin:0}
+.answer b{color:var(--ink);font-weight:600}
+h1 .hl{font-weight:500;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.wave{display:flex;align-items:center;gap:5px;height:44px;margin:26px 0 24px}
+.wave i{flex:1;max-width:2px;border-radius:1px}
+.picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.pick{border:1px solid var(--line);border-top:1.5px solid var(--pc);border-radius:18px;padding:18px 20px;background:color-mix(in srgb,var(--surface) 72%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+.pick:nth-child(1){--pc:var(--c1)}.pick:nth-child(2){--pc:var(--c2)}.pick:nth-child(3){--pc:var(--c3)}
+.pick small{display:block;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--pc);font-weight:500;margin-bottom:6px}
+.pick b{display:block;font-family:var(--display);font-size:19px;font-weight:500;line-height:1.35;margin-bottom:6px}
+.pick span{font-size:14.5px;color:var(--muted);line-height:1.6;display:block}
+
+/* tabs */
+.tabs{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--surface) 78%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.tabs .in{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px}
+.tabs a{flex:none;text-decoration:none;color:var(--ink);font-size:14px;font-weight:500;padding:6px 14px;border-radius:999px;background:transparent;border:1px solid var(--line);font-weight:400;white-space:nowrap}
+.tabs a:hover{background:var(--accent-soft);color:var(--accent)}
+.tabs a:nth-child(6n+1){box-shadow:inset 0 -1.5px var(--c1)}.tabs a:nth-child(6n+2){box-shadow:inset 0 -1.5px var(--c3)}.tabs a:nth-child(6n+3){box-shadow:inset 0 -1.5px var(--c5)}.tabs a:nth-child(6n+4){box-shadow:inset 0 -1.5px var(--c2)}.tabs a:nth-child(6n+5){box-shadow:inset 0 -1.5px var(--c4)}.tabs a:nth-child(6n){box-shadow:inset 0 -1.5px var(--c6)}
+
+/* sections */
+section{padding:76px 0 8px;scroll-margin-top:56px;--sec:var(--c1)}
+#open,#flow{--sec:var(--c3)}#matrix{--sec:var(--c5)}#thai2{--sec:var(--c4)}#next{--sec:var(--c5)}#emotion{--sec:var(--c2)}#price{--sec:var(--c4)}#popular{--sec:var(--c6)}
+.eyebrow{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--sec);border:1px solid var(--sec);display:inline-block;padding:1px 12px;border-radius:999px;margin:0 0 10px;letter-spacing:.08em}
+h2{font-family:var(--display);font-weight:400;letter-spacing:-.01em;font-size:clamp(25px,3.4vw,36px);line-height:1.35;margin:0 0 10px;text-wrap:balance}
+.sub{color:var(--muted);max-width:46em;margin:0 0 24px;font-size:16.5px}
+h3{font-family:var(--display);font-weight:500;font-size:19px;line-height:1.4;margin:34px 0 12px}
+p{margin:0 0 12px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:20px 22px;transition:transform .18s ease,box-shadow .18s ease;display:flex;flex-direction:column;gap:10px}
+.card:hover,.step:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(40,50,110,.10)}
+@media (prefers-reduced-motion: reduce){.card,.step{transition:none}.card:hover,.step:hover{transform:none}}
+.card h4{font-family:var(--display);font-weight:500;font-size:18px;line-height:1.35;margin:0}
+.card .who{font-size:13.5px;color:var(--muted);margin:-6px 0 0}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:12.5px;font-weight:500;padding:2px 10px;border-radius:999px;line-height:1.7;white-space:nowrap}
+.p-good{background:var(--good-soft);color:var(--good)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.p-info{background:var(--accent-soft);color:var(--accent)}
+.p-mute{background:var(--sunk);color:var(--muted)}
+dl.kv{margin:0;display:grid;grid-template-columns:5.8em minmax(0,1fr);gap:6px 12px;font-size:14.5px;line-height:1.65}
+dl.kv dt{color:var(--muted);font-weight:500}
+dl.kv dd{margin:0}
+.note{border-radius:14px;padding:16px 20px;font-size:15.5px;line-height:1.7;border:0;border-left:1.5px solid}
+.note b{font-weight:600}
+.n-warn{background:var(--warn-soft);border-color:var(--warn);color:var(--ink)}
+.n-info{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.n-bad{background:var(--bad-soft);border-color:var(--bad);color:var(--ink)}
+.note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px}
+.n-warn .tag{color:var(--warn)} .n-info .tag{color:var(--accent)} .n-bad .tag{color:var(--bad)}
+ul.clean{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.src{font-size:13px;color:var(--muted);margin:16px 0 0;line-height:1.9}
+.src a{color:var(--muted)}
+
+/* scenario cards */
+.scn{border-left:1.5px solid var(--sec)}
+.scn .use{color:var(--sec)}
+.scn:nth-child(6n+2){--sec:var(--c2)}.scn:nth-child(6n+3){--sec:var(--c3)}.scn:nth-child(6n+4){--sec:var(--c4)}.scn:nth-child(6n+5){--sec:var(--c5)}.scn:nth-child(6n){--sec:var(--c6)}
+.scn .when{font-size:13.5px;color:var(--muted);font-weight:500;margin:0}
+.scn .use{font-family:var(--display);font-weight:500;font-size:19px;line-height:1.35;margin:0}
+.scn .why{font-size:14.5px;margin:0}
+.scn .care{font-size:14px;margin:0;padding:8px 0 0;border-top:1px solid var(--line);color:var(--muted)}
+.scn .care b{color:var(--warn)}
+
+/* baseline */
+.base{background:var(--surface);border:1px solid var(--sec);box-shadow:var(--shadow);border-radius:18px;padding:20px 22px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px;align-items:center;margin-bottom:14px}
+.base h4{font-family:var(--display);font-weight:500;font-size:22px;margin:0 0 6px}
+.base p{font-size:15px;margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{background:var(--sunk);border-radius:14px;padding:10px 12px}
+.stat b{display:block;font-family:var(--display);font-weight:500;font-size:19px;line-height:1.3;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--muted)}
+
+/* tables */
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px}
+table{border-collapse:collapse;width:100%;min-width:680px;font-size:14.5px;line-height:1.6}
+th,td{padding:11px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{font-size:12.5px;font-weight:500;letter-spacing:.02em;color:var(--muted);background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+tr.sep td{background:var(--sunk);font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--muted);padding:6px 14px;text-transform:uppercase}
+
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--muted);margin:0 0 14px}
+.d{font-style:normal;display:inline-block;width:12px;height:12px;border-radius:50%;border:1.5px solid;vertical-align:-1px;box-sizing:border-box}
+.d.full{border-color:var(--good);background:var(--good)}
+.d.half{border-color:var(--warn);background:linear-gradient(90deg,var(--warn) 50%,transparent 50%)}
+.d.none{border-color:var(--muted);opacity:.6}
+.d.unk{border:0;width:auto;height:auto;border-radius:0;color:var(--muted);font-family:var(--mono);font-size:14px}
+.legend .d{margin-right:6px}
+table.mx{min-width:900px}
+table.mx th,table.mx td{text-align:center;padding:9px 10px}
+table.mx th:first-child,table.mx td:first-child,table.mx th:last-child,table.mx td:last-child{text-align:left}
+table.mx td:last-child{font-size:14px;color:var(--muted);min-width:17em}
+table.mx td:first-child small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+table.mx tr.sep td{text-align:left}
+/* bars */
+.bars{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:13.5em minmax(0,1fr) 5.2em;gap:12px;align-items:center;font-size:14.5px}
+.bar .track{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.bar .fill{height:100%;border-radius:3px;background:var(--sec)}
+.bar .fill.soft{background:repeating-linear-gradient(90deg,var(--sec),var(--sec) 4px,transparent 4px,transparent 8px)}
+.bar .v{font-family:var(--mono);font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums}
+.bar small{color:var(--muted);font-size:12.5px}
+.cap{font-size:13px;color:var(--muted);margin:10px 0 0}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;counter-reset:s}
+.step{background:var(--surface);border:1px solid var(--line);border-top:1.5px solid var(--sec);box-shadow:var(--shadow);border-radius:18px;transition:transform .18s ease,box-shadow .18s ease;padding:16px 18px;counter-increment:s}
+.step::before{content:counter(s,decimal-leading-zero);font-family:var(--mono);font-size:13px;font-weight:500;color:var(--sec);display:block;margin-bottom:4px}
+.step b{font-family:var(--display);font-size:17px;font-weight:500;display:block;margin-bottom:4px;line-height:1.4}
+.step span{font-size:14.5px;color:var(--muted);line-height:1.65;display:block}
+
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rank li{display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px;align-items:baseline}
+.rank li:last-child{border-bottom:0}
+.rank .n{font-family:var(--mono);color:var(--muted);font-size:13px}
+.rank .e{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px}
+footer{padding:44px 0 64px;color:var(--muted);font-size:13.5px}
+@media (max-width:860px){
+  .picks,.g2,.g3,.steps,.base{grid-template-columns:minmax(0,1fr)}
+  .bar{grid-template-columns:minmax(0,1fr) 5.2em}
+  .bar .track{grid-column:1/-1;order:3}
+  section{padding-top:40px}
+  header{padding:32px 0 28px}
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="in">
+  <p class="kicker"><span class="rec"></span>Deep Research · TTS และ Voice Cloning · ข้อมูล ณ 14 พ.ย. 2026</p>
+  <h1>มีอะไรดีกว่า <span class="hl">VoxCPM2</span> สำหรับพากย์เสียงไทยไหม</h1>
+  <p class="answer"><b>ยังไม่มีตัวไหนชนะรอบด้าน</b> แต่มี 3 ตัวที่ชนะเป็นรายมิติ ฝั่ง commercial <b>ElevenLabs v4</b> นำเรื่องอารมณ์ ส่วน <b>Gemini 3.8 Flash TTS</b> และเจ้าไทยถูกกว่าหลายเท่า</p>
+  <div class="wave" id="wave" aria-hidden="true"></div>
+  <div class="picks">
+    <div class="pick"><small>ฐานหลักบน Mac</small><b>VoxCPM2 + SiangTTS</b><span>ใช้ตัวที่คุณรู้จักต่อได้ เพิ่ม Thai LoRA เพื่ออ่านไทยแม่นขึ้น ใช้เชิงพาณิชย์ได้</span></div>
+    <div class="pick"><small>คลิปความยาวตายตัว</small><b>OmniVoice</b><span>สั่งความยาวเสียงต่อ scene ได้ตรง ๆ เหมาะกับคลิป Motion ที่ export แล้ว</span></div>
+    <div class="pick"><small>ต้องการอารมณ์จัด</small><b>ElevenLabs v4 หรือ Gemini 3.8 Flash TTS</b><span>ตัวแรกคุณภาพอันดับ 1 ตัวหลังถูกกว่าราว 6 เท่า</span></div>
+  </div>
+</div>
+</header>
+
+<nav class="tabs" aria-label="หัวข้อ"><div class="in">
+  <a href="#pick">เลือกตามงาน</a>
+  <a href="#matrix">ตาราง Feature</a>
+  <a href="#open">Open source</a>
+  <a href="#next">อัปเดตและตัวมาแรง</a>
+  <a href="#thai2">Chatterbox / IndexTTS ไทย</a>
+  <a href="#emotion">คุมอารมณ์</a>
+  <a href="#price">ราคา Commercial</a>
+  <a href="#popular">ความนิยม</a>
+  <a href="#flow">ขั้นตอนพากย์คลิป</a>
+  <a href="#gaps">สิ่งที่ยังไม่ยืนยัน</a>
+</div></nav>
+
+<main class="in">
+
+<section id="pick">
+  <p class="eyebrow">01</p>
+  <h2>เลือกตามงานของคุณ</h2>
+  <p class="sub">เริ่มจากตรงนี้ถ้าต้องการคำตอบเร็ว แต่ละการ์ดบอกว่าควรใช้อะไร เพราะอะไร และต้องระวังอะไร</p>
+  <div class="grid g2" id="scn"></div>
+</section>
+
+<section id="matrix">
+  <p class="eyebrow">02</p>
+  <h2>ตารางสรุป Feature และจุดเด่น</h2>
+  <p class="sub">เทียบทุกตัวในมุมเดียวกัน 6 เรื่องที่งานพากย์คลิปต้องใช้ ระดับในตารางสรุปจากหลักฐานที่พบ ไม่ใช่ผลทดสอบของผมเอง</p>
+  <div class="legend">
+    <span><i class="d full"></i> ทำได้ มีหลักฐานชัด</span>
+    <span><i class="d half"></i> ทำได้บางส่วน หรือมีเงื่อนไข</span>
+    <span><i class="d none"></i> ทำไม่ได้</span>
+    <span><i class="d unk">?</i> ยังไม่ยืนยัน</span>
+  </div>
+  <div class="tbl"><table class="mx" id="mx"></table></div>
+  <p class="cap">ภาษาไทยแบบครึ่งวง หมายถึงระบุว่ารองรับแต่ไม่มีผลวัด หรือเป็นงานชุมชนที่ยังไม่มีตัวเลข · เชิงพาณิชย์แบบครึ่งวง หมายถึงมีเงื่อนไข เช่น share-alike หรือเพดานรายได้ · รันในเครื่อง หมายถึงรันบน Mac ได้เองโดยไม่ผ่าน cloud</p>
+</section>
+
+<section id="open">
+  <p class="eyebrow">03</p>
+  <h2>Open source เทียบกับ VoxCPM2</h2>
+  <p class="sub">ศูนย์กลางของงานเสียงไทยย้ายจากตระกูล F5-TTS (ปี 2025) มาที่ตระกูล VoxCPM (ปี 2026) เวลาที่ลงกับ VoxCPM2 จึงไม่เสียเปล่า</p>
+
+  <div class="base">
+    <div>
+      <div class="pills" style="margin-bottom:8px"><span class="pill p-info">จุดอ้างอิง</span><span class="pill p-good">Apache-2.0 ใช้เชิงพาณิชย์ได้</span></div>
+      <h4>VoxCPM2 <span style="font-weight:500;font-size:15px;color:var(--muted)">OpenBMB · เม.ย. 2026</span></h4>
+      <p>รองรับไทยอย่างเป็นทางการ โคลนเสียงได้ ออกแบบเสียงได้ คุมอารมณ์ด้วยคำบรรยายในวงเล็บ และฝึก LoRA ด้วยเสียงตัวเอง 5–10 นาทีได้ ทีมพัฒนารายงาน Thai CER 0.94% แต่ผู้อื่นวัดได้ 3.26% ตัวเลขข้ามแหล่งจึงเทียบกันตรง ๆ ไม่ได้</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>48 kHz</b><span>คุณภาพเสียง</span></div>
+      <div class="stat"><b>30 ภาษา</b><span>รวมไทย</span></div>
+      <div class="stat"><b>40.6k</b><span>GitHub stars</span></div>
+      <div class="stat"><b>2B</b><span>parameters</span></div>
+      <div class="stat"><b>~8 GB</b><span>VRAM</span></div>
+      <div class="stat"><b>5–10 นาที</b><span>เสียงสำหรับ LoRA</span></div>
+    </div>
+  </div>
+
+  <div class="grid g2" id="alts"></div>
+
+  <h3>โมเดลดังที่ไม่มีภาษาไทย</h3>
+  <p style="max-width:48em">Chatterbox Multilingual V3, Fun-CosyVoice 3, IndexTTS-2.5, XTTS-v2, GPT-SoVITS, Zonos, Kokoro, NeuTTS, OpenVoice V2 และ Orpheus ไม่ระบุไทยบนหน้าหลัก ยังใช้ได้ดีกับ narration ภาษาอังกฤษ โดยเฉพาะ <strong>Chatterbox</strong> (MIT) และ <strong>IndexTTS-2.5</strong> ที่คุมอารมณ์ได้ละเอียดที่สุดในฝั่ง open</p>
+
+  <p class="src">แหล่งอ้างอิง:
+    <a href="https://huggingface.co/openbmb/VoxCPM2" target="_blank" rel="noopener">VoxCPM2</a> ·
+    <a href="https://huggingface.co/dubbing-ai/SiangTTS-VoxCPM2-Thai-LoRA" target="_blank" rel="noopener">SiangTTS</a> ·
+    <a href="https://arxiv.org/html/2604.27607v2" target="_blank" rel="noopener">JaiTTS paper</a> ·
+    <a href="https://huggingface.co/JTS-AI/OpenJaiTTS-v1.0" target="_blank" rel="noopener">OpenJaiTTS</a> ·
+    <a href="https://github.com/k2-fsa/OmniVoice" target="_blank" rel="noopener">OmniVoice</a> ·
+    <a href="https://arxiv.org/pdf/2609.03502" target="_blank" rel="noopener">Wayu-Paxa paper</a> ·
+    <a href="https://github.com/OpenMOSS/MOSS-TTS" target="_blank" rel="noopener">MOSS-TTS</a> ·
+    <a href="https://huggingface.co/bosonai/higgs-audio-v3-tts-4b" target="_blank" rel="noopener">Higgs v3</a> ·
+    <a href="https://github.com/fishaudio/fish-speech/blob/main/LICENSE" target="_blank" rel="noopener">Fish licence</a> ·
+    <a href="https://github.com/QwenLM/Qwen3-TTS" target="_blank" rel="noopener">Qwen3-TTS</a> ·
+    <a href="https://huggingface.co/VIZINTZOR/F5-TTS-THAI" target="_blank" rel="noopener">F5-TTS-THAI</a> ·
+    <a href="https://jts.co.th/jai/thai-ai-voice-cloning-jaitts-en/" target="_blank" rel="noopener">JTS JAI</a>
+  </p>
+</section>
+
+<section id="next">
+  <p class="eyebrow">04</p>
+  <h2>อัปเดตของ VoxCPM2 โครงการต่อยอด และตัวที่กำลังมาแรง</h2>
+  <p class="sub">VoxCPM2 ยังไม่มีรุ่นใหม่ และไม่ใช่ที่สุดของวงการ จุดแข็งของมันคือส่วนผสมของ licence เปิด ภาษาไทย โคลนเสียง และ LoRA ส่วนคุณภาพเสียงล้วน ๆ มีโมเดลใหม่ที่ได้คะแนนสูงกว่าในภาษาอังกฤษ</p>
+
+  <div class="grid g2" style="margin-bottom:14px">
+    <div class="note n-info"><span class="tag">สถานะรุ่น</span>หน้า GitHub ของ OpenBMB ยังระบุ VoxCPM2 (เม.ย. 2026) เป็นรุ่นล่าสุด <b>ไม่มีข่าว VoxCPM2.5 หรือ VoxCPM3</b> ความเคลื่อนไหวหลังจากนั้นมาจากชุมชนทั้งหมด</div>
+    <div class="note n-warn"><span class="tag">ถือเป็นที่สุดไหม</span><b>ไม่ใช่</b> ในอันดับ open weights ของ Artificial Analysis (ทดสอบภาษาอังกฤษ) VoxCPM2 ไม่อยู่ในตารางด้วยซ้ำ อันดับบนคือ Fish Audio Drama 3 (1275), Breeze TTS 2 (1229) และ Ming-3.0-tts (1182)</div>
+  </div>
+
+  <h3>โครงการที่ต่อยอดจาก VoxCPM2</h3>
+  <div class="grid g2">
+    <div class="card">
+      <div class="pills"><span class="pill p-good">ทำให้เสียงดีขึ้น</span></div>
+      <h4>Fine-tune และ LoRA</h4>
+      <ul class="clean" style="font-size:14.5px">
+        <li><b>SiangTTS</b> Thai LoRA: ตัวเดียวที่ปรับปรุงภาษาไทยและเปิด weights ให้ใช้</li>
+        <li><b>JaiTTS-v1.0</b>: ตัวเลขไทยดีที่สุด แต่ repo มีแค่โค้ด benchmark (38 stars) ไม่มี weights ใช้ได้ผ่าน demo เท่านั้น</li>
+        <li><b>LoRA เขมรและเกาหลี</b> (งานวิจัย มิ.ย. 2026): ใช้ข้อมูลรวมราว 26 ชม. กับ LoRA ตัวเดียว ช่วยได้มากที่สุดในภาษาที่ base อ่อน</li>
+        <li>ฝึก LoRA เองต้องใช้ VRAM ราว 20 GB ค่า <code>r=8</code> สำหรับปรับเสียงผู้พูด และ <code>r=32–64</code> สำหรับภาษาใหม่</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="pills"><span class="pill p-good">ทำให้เร็วขึ้น</span></div>
+      <h4>Engine และ port</h4>
+      <ul class="clean" style="font-size:14.5px">
+        <li><b>Nano-vLLM</b>: เร่งจาก RTF ราว 0.30 เป็น 0.13 บน RTX 4090</li>
+        <li><b>vLLM-Omni</b>: serving ทางการของ vLLM มี API แบบ OpenAI-compatible เหมาะกับ self-host บน GPU</li>
+        <li><b>VoxCPMANE</b>: รันบน Apple Neural Engine น่าลองบน M5 Max</li>
+        <li><b>llama.cpp-omni</b>, <b>audio.cpp</b>, <b>VoxCPM.cpp</b>: GGUF บน Metal, CUDA และ CPU ไม่ต้องใช้ Python</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="pills"><span class="pill p-info">เครื่องมือใช้งาน</span></div>
+      <h4>ComfyUI และ WebUI</h4>
+      <ul class="clean" style="font-size:14.5px">
+        <li><b>ComfyUI-VoxCPM</b>: มี node ฝึก LoRA ครบตั้งแต่ทำ dataset ถึง train ไม่ต้องเขียนสคริปต์</li>
+        <li><b>ComfyUI_RH_VoxCPM</b>: หลายผู้พูด โหลด LoRA และถอดเสียงอ้างอิงอัตโนมัติ</li>
+        <li><b>TTS WebUI extension</b>: ใช้ผ่านเบราว์เซอร์</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="pills"><span class="pill p-info">ตรงกับงานพากย์</span></div>
+      <h4>Video Dubbing Translator</h4>
+      <p style="font-size:14.5px;margin:0">pipeline พากย์วิดีโอแบบ local ครบวงจร: แยกเสียงพูดออกจากดนตรี ถอดเสียงด้วย WhisperX แปล โคลนเสียงด้วย VoxCPM2 และ lip-sync เป็นโครงการชุมชน ยังไม่ได้ตรวจว่ารองรับไทยดีแค่ไหน</p>
+    </div>
+  </div>
+
+  <h3>โมเดลเปิดที่กำลังมาแรง (ส.ค. ถึง พ.ย. 2026)</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>โมเดล</th><th>ออกเมื่อ</th><th>จุดเด่น</th><th>ไทย</th><th>Licence</th></tr></thead>
+    <tbody>
+      <tr><td>ZONOS3-Mini<br><span style="font-weight:400;color:var(--muted)">Zyphra</span></td><td>9 พ.ย. 2026</td><td>เล็กมาก (ใช้งานจริง 100M จาก 800M parameters) รัน real time บนเครื่องได้ สั่งอารมณ์ ความเร็ว เสียงกระซิบ ได้ถึงระดับคำ ผู้พัฒนาอ้างว่าอันดับ 1 ของโมเดลเปิดบนดัชนีของตัวเอง</td><td><span class="pill p-warn">ไม่ยืนยัน</span></td><td><span class="pill p-good">Apache-2.0</span></td></tr>
+      <tr><td>Audio8-TTS-Realistic<br><span style="font-weight:400;color:var(--muted)">Edge0</span></td><td>29 ต.ค. 2026</td><td>0.6B โคลนจากคลิปสั้นคลิปเดียวพร้อม transcript เน้น prosody เป็นธรรมชาติ 23 ภาษา</td><td><span class="pill p-good">มี (เพิ่งเพิ่ม)</span></td><td><span class="pill p-good">Apache-2.0</span></td></tr>
+      <tr><td>Ming-3.0 TTS<br><span style="font-weight:400;color:var(--muted)">Ant Group</span></td><td>20 ต.ค. 2026</td><td>โคลนเสียง ออกแบบเสียง และ expressive tag 14 แบบ Elo 1182 อันดับ 4 ของ open weights</td><td><span class="pill p-warn">ไม่ทราบ</span></td><td><span class="pill p-good">MIT</span></td></tr>
+      <tr><td>Fish Audio Drama 3<br><span style="font-weight:400;color:var(--muted)">Fish Audio</span></td><td>ต.ค. 2026</td><td>open weights อันดับ 1 (Elo 1275) คุมอารมณ์ระดับคำ</td><td><span class="pill p-warn">ไม่ยืนยัน</span></td><td><span class="pill p-warn">รายได้ไม่เกิน $500k</span></td></tr>
+      <tr><td>Breeze TTS 2</td><td>ส.ค. 2026</td><td>Elo 1229 อันดับ 2 ร่วมของ open weights</td><td><span class="pill p-warn">ไม่ทราบ</span></td><td><span class="pill p-warn">มีเงื่อนไข</span></td></tr>
+      <tr><td>IndexTTS-2.5<br><span style="font-weight:400;color:var(--muted)">bilibili</span></td><td>ส.ค. 2026</td><td>แยกอารมณ์ออกจากเสียงผู้พูดได้ดีที่สุด</td><td><span class="pill p-bad">ไม่มี</span></td><td><span class="pill p-warn">bilibili</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">ยังไม่มีใครวัดโมเดลกลุ่มนี้บนภาษาไทย ตัวที่ควรเพิ่มในรอบทดสอบของคุณคือ <b>Audio8-TTS-Realistic</b> (Apache-2.0 และระบุไทย) และ <b>ZONOS3-Mini</b> ถ้าพบว่ารองรับไทย คะแนนของ ZONOS3-Mini มาจากดัชนีที่ผู้พัฒนาสร้างเอง และข้อมูล 43 ภาษามาจากบทความภายนอก</p>
+
+  <p class="src">แหล่งอ้างอิง:
+    <a href="https://github.com/OpenBMB/VoxCPM/" target="_blank" rel="noopener">OpenBMB/VoxCPM</a> ·
+    <a href="https://voxcpm.readthedocs.io/en/latest/finetuning/walkthrough.html" target="_blank" rel="noopener">VoxCPM fine-tuning guide</a> ·
+    <a href="https://arxiv.org/abs/2606.26618" target="_blank" rel="noopener">Khmer/Korean LoRA paper</a> ·
+    <a href="https://github.com/JTS-AI-Team/JaiTTS" target="_blank" rel="noopener">JaiTTS repo</a> ·
+    <a href="https://github.com/wildminder/ComfyUI-VoxCPM/releases" target="_blank" rel="noopener">ComfyUI-VoxCPM</a> ·
+    <a href="https://github.com/kadirb4rut/video-dubbing-translator" target="_blank" rel="noopener">Video Dubbing Translator</a> ·
+    <a href="https://artificialanalysis.ai/text-to-speech/leaderboard/open-weights" target="_blank" rel="noopener">Artificial Analysis open weights</a> ·
+    <a href="https://www.zyphra.com/our-work/zonos3-mini" target="_blank" rel="noopener">ZONOS3-Mini</a> ·
+    <a href="https://freakyjolly.com/zonos3-mini-tts-guide/" target="_blank" rel="noopener">ZONOS3-Mini guide</a> ·
+    <a href="https://artrealmai.com/article/audio8-tts-realistic-open-0-6b-voice-cloning-23-languages" target="_blank" rel="noopener">Audio8-TTS-Realistic</a> ·
+    <a href="https://techpilot.ai/tools/ming-3-tts/" target="_blank" rel="noopener">Ming-3.0 TTS</a>
+  </p>
+</section>
+
+<section id="thai2">
+  <p class="eyebrow">05</p>
+  <h2>Chatterbox และ IndexTTS-2.5 มีภาษาไทยหรือยัง</h2>
+  <p class="sub">ค้นคว้ารอบสองเฉพาะสองตัวนี้ คำตอบสั้นคือ ทางการยังไม่มีทั้งคู่ Chatterbox ไม่มีงานชุมชนภาษาไทยเลย ส่วน IndexTTS มีคนทำไทยแล้วแต่เป็นรุ่น 2 ไม่ใช่ 2.5 และยังใช้เชิงพาณิชย์ไม่ได้</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <div class="pills"><span class="pill p-bad">ยังไม่มีภาษาไทย</span><span class="pill p-good">MIT</span></div>
+      <h4>Chatterbox</h4>
+      <p class="who">Resemble AI · Multilingual V3 (มิ.ย. 2026)</p>
+      <ul class="clean" style="font-size:14.5px">
+        <li><b>ทางการ:</b> รองรับ 23 ภาษา ไม่มีไทย ภาษาอาเซียนมีแค่มาเลย์ ใส่ <code>language_id="th"</code> จะ error ทันที</li>
+        <li><b>ชุมชน:</b> ไม่พบ fine-tune ภาษาไทยบน Hugging Face เลย มีแต่อินโดนีเซียและเวียดนาม</li>
+        <li><b>อนาคต:</b> Resemble เลิกทำ Chatterbox เชิงพาณิชย์ตั้งแต่ ส.ค. 2026 ยังเป็น open source แต่ไม่มีอัปเดตหรือ support แล้ว จึงไม่ควรรอไทยจากทางการ</li>
+        <li><b>สัญญาณเตือนภาษาวรรณยุกต์:</b> Resemble รายงานเองว่าเวียดนามบน V3 อ่านผิดถึง 75% (CER) และไม่แนะนำให้ใช้เชิงพาณิชย์</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="pills"><span class="pill p-warn">มีไทยจากชุมชน เฉพาะรุ่น 2</span><span class="pill p-warn">bilibili licence</span></div>
+      <h4>IndexTTS-2.5</h4>
+      <p class="who">bilibili · weights ออก 10 ส.ค. 2026</p>
+      <ul class="clean" style="font-size:14.5px">
+        <li><b>ทางการ:</b> รุ่น 2.5 รองรับจีน อังกฤษ ญี่ปุ่น สเปน และอาหรับ ไม่มีไทย และไม่มี roadmap ภาษา</li>
+        <li><b>ชุมชน:</b> มี Thai fine-tune ของ <b>IndexTTS-2</b> อย่างน้อย 4 ชุด (ตารางด้านล่าง) ยังไม่พบของรุ่น 2.5</li>
+        <li><b>คุณภาพ:</b> ไม่มีชุดไหนรายงานตัวเลขวัดผล ผู้ทำเองบอกว่ามีอาการพูดซ้ำ ข้อความยาวแย่ลง และอารมณ์ในไทย "ยังไม่ค่อยดี"</li>
+        <li><b>Licence:</b> ผ่อนกว่าที่ผมเขียนไว้รอบแรก ใช้ฟรีได้จนกว่าจะเกิน 100 ล้านผู้ใช้ต่อเดือนหรือรายได้ 1 พันล้านหยวน แต่ fine-tune ไทยที่มีอยู่ติดข้อมูลฝึกแบบ non-commercial</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Thai fine-tune ของ IndexTTS-2 ที่พบ</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>โมเดล</th><th>ข้อมูลฝึก</th><th>วิธี</th><th>ใช้เชิงพาณิชย์</th><th>ข้อสังเกต</th></tr></thead>
+    <tbody>
+      <tr><td>dubbing-ai/indextts2-thai-lora</td><td>vaja-thai 554 ชม.</td><td>LoRA r32 ฝึก BPE ใหม่ด้วยพจนานุกรม PyThaiNLP</td><td><span class="pill p-bad">ไม่ได้</span></td><td>ทีมเดียวกับ SiangTTS มีสคริปต์ฝึกให้ ฝึกบน RTX 3090 ตัวเดียวราว 9 วัน ไม่มี duration control</td></tr>
+      <tr><td>williampike/indextts2-thai_finetune_v1</td><td>Porjai 500 ชม.</td><td>trainer ไม่เป็นทางการของ JarodMica</td><td><span class="pill p-warn">ไม่ระบุ</span></td><td>ผู้ทำรายงานว่าพูดซ้ำ มีปัญหากับช่องว่างและตัวอักษรที่ไม่ใช่ไทย เกินราว 40 tokens เริ่มแย่</td></tr>
+      <tr><td>williampike/thai_indextts2</td><td>ราว 800 ชม. ไม่บอกที่มา</td><td>checkpoint พร้อม Thai BPE และ WebUI</td><td><span class="pill p-warn">ไม่ระบุ</span></td><td>ผู้ทำบอกว่า emotion vector ในไทยไม่ค่อยดี คุมความยาวไม่แม่น ไทยปนอังกฤษอ่อน</td></tr>
+      <tr><td>aodianyun/indextts2-thai</td><td>ไม่เปิดเผย</td><td>ไม่เปิดเผย</td><td><span class="pill p-warn">ไม่ระบุ</span></td><td>อยู่บน Replicate มีผู้ใช้น้อยมาก</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>ถ้าจะทำภาษาไทยเอง คุ้มไหม</h3>
+  <div class="grid g3">
+    <div class="card"><h4>ทำได้ แต่ผลน่าจะด้อยกว่า</h4><p style="margin:0;font-size:14.5px">fine-tune ภาษาใหม่บน Chatterbox ได้ WER 10.7% (ทาจิก 205 ชม.) ถึง 19.1% (อุซเบก 119 ชม.) และ IndexTTS-2.5 เยอรมันได้ 5.35% (310 ชม.) เทียบกับ SiangTTS บน VoxCPM2 ที่ได้ CER 0.84% จากข้อมูลไทยราว 205 ชม. ชุดทดสอบต่างกัน จึงบอกได้แค่ทิศทาง</p></div>
+    <div class="card"><h4>ข้อมูลไทยที่ใช้เชิงพาณิชย์ได้มีจำกัด</h4><p style="margin:0;font-size:14.5px">Common Voice Thai (CC0 ราว 159 ชม.), Porjai (ราว 700 ชม. share-alike), YODAS Thai (497 ชม.) และ Thai-SER เสียงมีอารมณ์ (41.6 ชม.) ส่วน GigaSpeech 2 กว่าหมื่นชั่วโมงและ TSync-2 ใช้ได้แค่งานวิจัย</p></div>
+    <div class="card"><h4>ต้องใช้ GPU ไม่ใช่ Mac</h4><p style="margin:0;font-size:14.5px">งานชุมชนใช้ RTX 3090/4090 หรือ A100 ตัวเดียว หลายวันถึงเกินสัปดาห์ ไม่มีใครบันทึกการฝึกสองโมเดลนี้บน Apple Silicon M5 Max เหมาะกับเตรียมข้อมูลและทดสอบ ส่วนการฝึกควรไปที่ GPU บน Azure</p></div>
+  </div>
+  <div class="note n-info" style="margin-top:14px"><span class="tag">ข้อสรุป</span>ถ้าเป้าหมายคือเสียงไทยที่ใช้งานได้จริง สองตัวนี้ยังไม่ใช่คำตอบ ควรอยู่กับตระกูล VoxCPM2 ต่อไป ถ้าอยากได้ระบบอารมณ์ของ IndexTTS ในภาษาไทย ลอง <b>dubbing-ai/indextts2-thai-lora</b> ได้เฉพาะงานทดลองส่วนตัว สำหรับ narration ภาษาอังกฤษ ทั้ง Chatterbox และ IndexTTS-2.5 ยังเป็นตัวเลือกที่ดี และมี MLX port ให้รันบน Mac</div>
+
+  <p class="src">แหล่งอ้างอิง:
+    <a href="https://github.com/resemble-ai/chatterbox" target="_blank" rel="noopener">Chatterbox</a> ·
+    <a href="https://www.resemble.ai/resources/chatterbox-multilingual-v3-tts-with-embedded-watermarking-for-25-languages" target="_blank" rel="noopener">Resemble V3 blog</a> ·
+    <a href="https://huggingface.co/dolly-vn/viterbox" target="_blank" rel="noopener">Viterbox (เวียดนาม)</a> ·
+    <a href="https://github.com/gokhaneraslan/chatterbox-finetuning" target="_blank" rel="noopener">chatterbox-finetuning</a> ·
+    <a href="https://github.com/index-tts/index-tts" target="_blank" rel="noopener">IndexTTS</a> ·
+    <a href="https://arxiv.org/html/2601.03888v3" target="_blank" rel="noopener">IndexTTS-2.5 report</a> ·
+    <a href="https://raw.githubusercontent.com/index-tts/index-tts/main/LICENSE" target="_blank" rel="noopener">bilibili licence</a> ·
+    <a href="https://huggingface.co/dubbing-ai/indextts2-thai-lora" target="_blank" rel="noopener">dubbing-ai Thai LoRA</a> ·
+    <a href="https://huggingface.co/williampike/indextts2-thai_finetune_v1" target="_blank" rel="noopener">williampike v1</a> ·
+    <a href="https://huggingface.co/williampike/thai_indextts2" target="_blank" rel="noopener">williampike thai_indextts2</a> ·
+    <a href="https://replicate.com/aodianyun/indextts2-thai/api" target="_blank" rel="noopener">aodianyun</a> ·
+    <a href="https://huggingface.co/sharrnah/index-tts-2.5-german" target="_blank" rel="noopener">IndexTTS-2.5 German</a> ·
+    <a href="https://github.com/index-tts/index-tts/issues/501" target="_blank" rel="noopener">issue #501</a> ·
+    <a href="https://github.com/blossomstack/mlx-indextts" target="_blank" rel="noopener">mlx-indextts</a> ·
+    <a href="https://huggingface.co/datasets/dubbing-ai/vaja-thai" target="_blank" rel="noopener">vaja-thai</a> ·
+    <a href="https://huggingface.co/datasets/CMKL/Porjai-Thai-voice-dataset-central/blob/main/README.md" target="_blank" rel="noopener">Porjai</a> ·
+    <a href="https://huggingface.co/datasets/airesearch/thai-ser" target="_blank" rel="noopener">Thai-SER</a>
+  </p>
+</section>
+
+<section id="emotion">
+  <p class="eyebrow">06</p>
+  <h2>การคุมอารมณ์เสียง</h2>
+  <p class="sub">ทุกระบบชั้นนำมีกลไกคุมอารมณ์ แต่คำว่า "รองรับไทย" ในตารางหมายถึงภาษารองรับและมีกลไกเท่านั้น ยังไม่มีใครวัดว่าได้ผลดีแค่ไหนกับข้อความไทย</p>
+
+  <div class="grid g2" style="margin-bottom:14px">
+    <div class="note n-warn"><span class="tag">หลักฐานเดียวที่มี</span>iApp Chinda TTS รายงานเองว่าเมื่อใส่ style อารมณ์ อัตราอ่านผิด (CER) ขึ้นจาก <b>3.2% เป็น 8.3%</b> และ style ล้มเหลว 15% ยิ่งดันอารมณ์ ยิ่งต้องฟังตรวจและ generate ซ้ำ</div>
+    <div class="note n-info"><span class="tag">เทคนิคที่ได้ผลกับเสียงโคลน</span>อัดเสียงตัวเองไว้หลายอารมณ์ แล้วเลือก reference clip ให้ตรงกับ scene เสียงเรียบที่ถูกสั่งให้ตะโกนจะเพี้ยน และให้เขียน tag เป็นภาษาอังกฤษแม้เนื้อความเป็นไทย</div>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr><th>ระบบ</th><th>สั่งอารมณ์อย่างไร</th><th>ไทย</th><th>ใช้กับเสียงโคลน</th><th>Licence</th></tr></thead>
+    <tbody>
+      <tr class="sep"><td colspan="5">Open source ที่มีไทย</td></tr>
+      <tr><td>VoxCPM2</td><td>คำบรรยายในวงเล็บต้นข้อความ เช่น <code>(cheerful tone)</code> มีผลทั้งประโยค</td><td><span class="pill p-good">ใช่</span></td><td>ได้ ผลต่างกันแต่ละรอบ</td><td><span class="pill p-good">Apache-2.0</span></td></tr>
+      <tr><td>OmniVoice</td><td>tag เสียงที่ไม่ใช่คำพูด เช่น <code>[laughter]</code> <code>[sigh]</code></td><td><span class="pill p-good">ใช่</span></td><td>ได้</td><td><span class="pill p-warn">weights ยังไม่ตรวจ</span></td></tr>
+      <tr><td>Higgs Audio v3</td><td>tag ละเอียด: <code>&lt;|emotion:…|&gt;</code> <code>&lt;|style:whispering|&gt;</code> <code>&lt;|sfx:laughter|&gt;</code></td><td><span class="pill p-warn">ผู้พัฒนาอ้าง</span></td><td>ได้</td><td><span class="pill p-bad">Non-commercial</span></td></tr>
+      <tr><td>Fish Drama 3</td><td><code>[bracket]</code> อิสระทุกตำแหน่ง แก้เฉพาะคำ สั่งแก้ take เดิมได้</td><td><span class="pill p-warn">ไม่ยืนยัน</span></td><td>ได้</td><td><span class="pill p-warn">รายได้ไม่เกิน $500k</span></td></tr>
+      <tr><td>Qwen3-TTS</td><td><code>instruct</code> ภาษาธรรมชาติ</td><td><span class="pill p-warn">ไม่เป็นทางการ</span></td><td><b>ไม่ได้</b></td><td><span class="pill p-good">Apache-2.0</span></td></tr>
+      <tr><td>MOSS-TTS v1.5</td><td>ไม่มี มีแค่ <code>[pause 0.5s]</code></td><td><span class="pill p-good">ใช่</span></td><td>ไม่มี</td><td><span class="pill p-good">Apache-2.0</span></td></tr>
+      <tr class="sep"><td colspan="5">Open source ที่ไม่มีไทย (ใช้กับอังกฤษ)</td></tr>
+      <tr><td>IndexTTS-2.5</td><td>เสียงอ้างอิงอารมณ์แยกจากเสียงผู้พูด, vector 8 มิติ, ข้อความบรรยาย</td><td><span class="pill p-bad">ไม่</span></td><td>ได้ ดีที่สุดในกลุ่ม</td><td><span class="pill p-warn">bilibili</span></td></tr>
+      <tr><td>Chatterbox</td><td>slider <code>exaggeration</code> และ <code>cfg_weight</code></td><td><span class="pill p-bad">ไม่</span></td><td>ได้</td><td><span class="pill p-good">MIT</span></td></tr>
+      <tr class="sep"><td colspan="5">Commercial</td></tr>
+      <tr><td>ElevenLabs v4 / v3</td><td><code>[tag]</code> ผสมคำบรรยาย เช่น <code>[said angrily]</code> ระดับคำหรือวลี</td><td><span class="pill p-good">ใช่</span></td><td>ได้ ถ้าเสียงต้นแบบมีอารมณ์นั้น</td><td><span class="pill p-mute">บริการ</span></td></tr>
+      <tr><td>Gemini 3.8 Flash TTS</td><td>field <code>style</code> ต่อ turn และ tag <code>&lt;laugh&gt;</code> <code>&lt;sigh&gt;</code></td><td><span class="pill p-good">ใช่</span></td><td>ได้</td><td><span class="pill p-mute">บริการ</span></td></tr>
+      <tr><td>MiniMax speech-2.8</td><td><code>emotion</code> เลือกจาก 7 ค่า และ tag <code>(laughs)</code> <code>(sighs)</code></td><td><span class="pill p-good">ใช่</span></td><td>ไม่ระบุ</td><td><span class="pill p-mute">บริการ</span></td></tr>
+      <tr><td>iApp Chinda TTS</td><td>เลือก 8 styles ต่อครั้ง</td><td><span class="pill p-good">Thai-first</span></td><td>อารมณ์ตามเสียงต้นแบบ</td><td><span class="pill p-mute">บริการ</span></td></tr>
+      <tr><td>Azure Speech</td><td>SSML <code>express-as</code> 34 styles</td><td><span class="pill p-warn">style กับไทยไม่ยืนยัน</span></td><td>custom voice ฝึกได้</td><td><span class="pill p-mute">บริการ</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <p class="src">แหล่งอ้างอิง:
+    <a href="https://iapp.co.th/blog/chindatts-launch" target="_blank" rel="noopener">iApp Chinda TTS</a> ·
+    <a href="https://iapp.co.th/blog/thai-voice-cloning-tts" target="_blank" rel="noopener">iApp voice cloning</a> ·
+    <a href="https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices" target="_blank" rel="noopener">ElevenLabs best practices</a> ·
+    <a href="https://ai.google.dev/gemini-api/docs/speech-generation" target="_blank" rel="noopener">Gemini speech docs</a> ·
+    <a href="https://platform.minimax.io/docs/api-reference/speech-t2a-http" target="_blank" rel="noopener">MiniMax T2A</a> ·
+    <a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice" target="_blank" rel="noopener">Azure SSML</a> ·
+    <a href="https://github.com/index-tts/index-tts" target="_blank" rel="noopener">IndexTTS</a> ·
+    <a href="https://github.com/resemble-ai/chatterbox" target="_blank" rel="noopener">Chatterbox</a>
+  </p>
+</section>
+
+<section id="price">
+  <p class="eyebrow">07</p>
+  <h2>Commercial คิดราคาอย่างไร</h2>
+  <p class="sub">ราคาต่างกันกว่าสิบเท่า กราฟนี้แปลงทุกเจ้าเป็นดอลลาร์ต่อเสียง 1 ชั่วโมง โดยสมมติ 60,000 ตัวอักษรต่อชั่วโมง เป็นการคำนวณของงานวิจัยนี้ ไม่ใช่ตัวเลขของผู้ขาย และภาษาไทยอาจคลาดได้ราว ±30%</p>
+
+  <div class="bars" id="bars"></div>
+  <p class="cap">แถบลายขีดคือตัวเลขที่ยังไม่ยืนยันจากหน้าทางการ · iApp Chinda TTS อยู่ที่ราว 12 บาทต่อชั่วโมง (แพ็ก Voice S) ไม่ได้ใส่ในกราฟเพราะเป็นสกุลบาท · Botnoi ไม่มีอัตราบาทต่อ point ให้คำนวณ</p>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="note n-bad"><span class="tag">กับดัก ElevenLabs</span>ภาษาไทยมีเฉพาะรุ่น v3 และ v4 แต่ API ตั้งค่าเริ่มต้นเป็น <code>eleven_multilingual_v2</code> ซึ่งไม่มีไทย ต้องระบุ <code>model_id</code> เองทุกครั้ง</div>
+    <div class="note n-warn"><span class="tag">ราคากำลังเปลี่ยน</span>Gemini 3.8 Flash TTS ขึ้นราคาเท่าตัว 1 ม.ค. 2027 และ Fish Audio คิดตาม byte ทำให้ไทยแพงกว่าอังกฤษราว 3 เท่า</div>
+    <div class="note n-warn"><span class="tag">บริการที่กำลังหายไป</span>Hume ปิด TTS API แล้วเมื่อ 13 พ.ย. 2026 และ OpenAI จะปิด <code>gpt-4o-mini-tts</code>, <code>tts-1</code> วันที่ 6 ม.ค. 2027</div>
+  </div>
+
+  <h3>รายละเอียดรายเจ้า</h3>
+  <div class="grid g2" id="vendors"></div>
+
+  <p class="src">แหล่งอ้างอิง:
+    <a href="https://elevenlabs.io/pricing" target="_blank" rel="noopener">ElevenLabs pricing</a> ·
+    <a href="https://elevenlabs.io/pricing/api" target="_blank" rel="noopener">ElevenLabs API pricing</a> ·
+    <a href="https://elevenlabs.io/docs/overview/models" target="_blank" rel="noopener">ElevenLabs models</a> ·
+    <a href="https://platform.minimax.io/docs/guides/pricing-paygo" target="_blank" rel="noopener">MiniMax</a> ·
+    <a href="https://cloud.google.com/text-to-speech/pricing" target="_blank" rel="noopener">Google Cloud TTS</a> ·
+    <a href="https://cartesia.ai/pricing" target="_blank" rel="noopener">Cartesia</a> ·
+    <a href="https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits" target="_blank" rel="noopener">Fish Audio API</a> ·
+    <a href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/speech-services/" target="_blank" rel="noopener">Azure Speech</a> ·
+    <a href="https://costbench.com/software/ai-voice-tools/microsoft-speech/" target="_blank" rel="noopener">CostBench</a> ·
+    <a href="https://iapp.co.th/pricing" target="_blank" rel="noopener">iApp</a> ·
+    <a href="https://voice.botnoi.ai/" target="_blank" rel="noopener">Botnoi Voice</a> ·
+    <a href="https://developers.openai.com/api/docs/guides/text-to-speech" target="_blank" rel="noopener">OpenAI TTS</a> ·
+    <a href="https://fish.audio/hume-tts-alternative" target="_blank" rel="noopener">Hume shutdown (อ้างโดย Fish Audio)</a>
+  </p>
+</section>
+
+<section id="popular">
+  <p class="eyebrow">08</p>
+  <h2>ตัวไหนได้รับความนิยม เพราะอะไร</h2>
+  <p class="sub">อันดับโลกวัดจากภาษาอังกฤษเป็นหลักและเปลี่ยนเร็วมาก เจ็ดสัปดาห์ก่อนหน้านี้ Cartesia ยังเป็นที่ 1 จึงใช้บอกคุณภาพไทยได้น้อย</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4>คุณภาพเสียง: Artificial Analysis Speech Arena</h4>
+      <p class="who">คะแนน Elo จากการโหวตแบบไม่เห็นชื่อ อ่าน 14 พ.ย. 2026</p>
+      <ol class="rank">
+        <li><span class="n">1</span><span><b>ElevenLabs v4</b></span><span class="e">1340</span></li>
+        <li><span class="n">2</span><span>ElevenLabs v4 Turbo</span><span class="e">1339</span></li>
+        <li><span class="n">3</span><span>Qwen-Audio-3.1-TTS-Plus</span><span class="e">1300</span></li>
+        <li><span class="n">4</span><span>Cartesia Sonic 3.6</span><span class="e">1294</span></li>
+        <li><span class="n">4</span><span>Speechify Simba 3.5</span><span class="e">1294</span></li>
+        <li><span class="n">6</span><span>Gemini 3.8 Flash TTS</span><span class="e">1284</span></li>
+        <li><span class="n">7</span><span>Fish Audio Drama 3 <span class="pill p-info">open weights</span></span><span class="e">1275</span></li>
+      </ol>
+      <p style="font-size:13.5px;color:var(--muted);margin:0">อันดับ 3 ถึง 7 คะแนนซ้อนทับกันทางสถิติ มีเพียงสองรุ่นของ ElevenLabs ที่นำชัดเจน</p>
+    </div>
+    <div class="card">
+      <h4>ความสนใจฝั่ง open source: GitHub stars</h4>
+      <p class="who">วัดความสนใจสะสม ไม่ใช่ความเหมาะกับงานวันนี้</p>
+      <div id="stars" style="display:flex;flex-direction:column;gap:8px"></div>
+      <p style="font-size:13.5px;color:var(--muted);margin:0">VoxCPM เป็นตัวเดียวในกลุ่มบนที่ทั้ง Apache-2.0 และระบุไทยเป็นทางการ</p>
+    </div>
+  </div>
+
+  <h3>เหตุผลที่แต่ละเจ้าได้รับความนิยม</h3>
+  <div class="grid g3">
+    <div class="card"><h4>ElevenLabs</h4><p style="margin:0;font-size:14.5px">ผู้นำตลาดแบบทิ้งห่าง รายได้ราว $600M ต่อปี (ประเมินโดย Sacra, มิ.ย. 2026) ภาษากว้างที่สุดในกลุ่มคุณภาพสูง โคลนได้จากเสียงราว 10 วินาที</p></div>
+    <div class="card"><h4>คู่แข่งชนะคนละแกน</h4><p style="margin:0;font-size:14.5px"><b>Cartesia</b> เร็วที่สุด · <b>Google</b> และ <b>Speechify</b> ราคาถูก · <b>MiniMax</b> มี emotion parameter ชัดและเก่งภาษาเอเชีย · <b>Fish Audio</b> open weights ราคาถูก</p></div>
+    <div class="card"><h4>ในหมู่ผู้ใช้ไทย</h4><p style="margin:0;font-size:14.5px">รีวิวไทยที่ให้คะแนนมีชิ้นเดียว (AI Unlocked, ก.ค. 2026, ผู้รีวิวคนเดียว): <b>Botnoi Voice</b> ชนะการออกเสียงไทย 9.5/10 ส่วน <b>ElevenLabs</b> ชนะความเป็นธรรมชาติ 9.5 และอารมณ์ 9.0</p></div>
+  </div>
+  <div class="note n-info" style="margin-top:14px"><span class="tag">โมเดลไทยเฉพาะทางสู้ได้</span>ใน blind test ที่ทีม JaiTTS จัดเอง ผู้ฟังไทย 20 คนเลือก JaiTTS เหนือ ElevenLabs v3 (161 ต่อ 20) และ MiniMax speech-2.8-hd (122 ต่อ 38) การทดสอบนี้จัดโดยผู้พัฒนาเองและเกิดก่อน ElevenLabs v4 กับ Gemini 3.8</div>
+
+  <p class="src">แหล่งอ้างอิง:
+    <a href="https://artificialanalysis.ai/text-to-speech/leaderboard" target="_blank" rel="noopener">Artificial Analysis</a> ·
+    <a href="https://www.digitalapplied.com/blog/best-text-to-speech-models-september-2026-ranked-priced" target="_blank" rel="noopener">Digital Applied</a> ·
+    <a href="https://sacra.com/c/elevenlabs/" target="_blank" rel="noopener">Sacra</a> ·
+    <a href="https://aiunlock.co/blog/ai-video-thai-voice-comparison" target="_blank" rel="noopener">AI Unlocked</a> ·
+    <a href="https://github.com/RVC-Boss/GPT-SoVITS" target="_blank" rel="noopener">GPT-SoVITS</a> ·
+    <a href="https://github.com/OpenBMB/VoxCPM/" target="_blank" rel="noopener">VoxCPM</a>
+  </p>
+</section>
+
+<section id="flow">
+  <p class="eyebrow">09</p>
+  <h2>ขั้นตอนพากย์เสียงใส่คลิป</h2>
+  <p class="sub">หลักสำคัญคือให้ความยาวเสียงเป็นตัวกำหนดความยาว scene ไม่ใช่กลับกัน ถ้าคลิป export แล้วและความยาวตายตัว ให้ปรับที่สคริปต์ก่อนจะไปยืดหดเสียง</p>
+
+  <div class="steps">
+    <div class="step"><b>เตรียมสคริปต์</b><span>ให้ LLM แปลงตัวเลขเป็นคำไทย และคำอังกฤษเป็นคำอ่าน เช่น API เป็น เอ-พี-ไอ แบ่งสคริปต์เป็นราย scene</span></div>
+    <div class="step"><b>สร้างเสียงทีละ scene</b><span>หนึ่งไฟล์ต่อ scene ใส่ tag อารมณ์เป็นภาษาอังกฤษ เลือก reference clip ให้ตรงอารมณ์</span></div>
+    <div class="step"><b>สร้างหลาย take แล้วเลือก</b><span>การสุ่มหลายรอบยกความแม่นคำยากของ OmniVoice จาก 72.8% เป็น 87.9% ในงานวิจัย</span></div>
+    <div class="step"><b>ฟังตรวจด้วยหู</b><span>ASR จับวรรณยุกต์ผิดไม่ได้ จุดที่พลาดบ่อยคือ ตัวเลข คำทับศัพท์ และการหยุดกลางคำ</span></div>
+    <div class="step"><b>ปรับความยาวให้พอดี</b><span>แก้สคริปต์ก่อน แล้วค่อย generate ใหม่ด้วยค่าความเร็วหรือ <code>duration</code> ใช้ ffmpeg <code>atempo</code> เป็นทางสุดท้าย</span></div>
+    <div class="step"><b>รวมเสียงกับภาพ</b><span>mux ด้วย ffmpeg หรือโปรแกรมตัดต่อ ถ้าใช้ Remotion ให้ <code>calculateMetadata</code> อ่านความยาวเสียงมากำหนด composition</span></div>
+  </div>
+
+  <div class="note n-warn" style="margin-top:14px"><span class="tag">timestamp ภาษาไทย</span>WhisperX ไม่มี alignment model สำหรับไทยและจะ error ทางออกคือ endpoint <code>with-timestamps</code> ของ ElevenLabs (timing ระดับตัวอักษร) หรือ Montreal Forced Aligner ซึ่งมี Thai acoustic model v3.0.0</div>
+
+  <h3>รันบน MacBook Pro M5 Max 128GB</h3>
+  <div class="grid g2">
+    <div class="card"><h4>mlx-audio</h4><p class="who">MIT · 8.2k stars</p><p style="margin:0;font-size:14.5px">มี MLX port ของ VoxCPM2, OmniVoice, MOSS-TTS, Higgs v3, Drama 3 และ Qwen3-TTS พร้อม API แบบ OpenAI-compatible ที่ <code>/v1/audio/speech</code> ยังไม่ยืนยันว่าส่วนประมวลผลข้อความไทยทำงานเหมือนต้นฉบับ</p></div>
+    <div class="card"><h4>PyTorch MPS</h4><p class="who">ทางที่ปลอดภัยกว่าสำหรับไทย</p><p style="margin:0;font-size:14.5px">VoxCPM2 และ OmniVoice บันทึกการรันบน Apple Silicon ไว้เอง ใช้ทางนี้ถ้าจะโหลด SiangTTS LoRA เพราะยังไม่รู้ว่า MLX port โหลดได้หรือไม่ OmniVoice ต้องติดตั้ง <code>pynini</code> ผ่าน conda-forge</p></div>
+    <div class="card"><h4>ComfyUI TTS Audio Suite</h4><p class="who">19 engines</p><p style="margin:0;font-size:14.5px">รวม OmniVoice, MOSS-TTS และ Higgs v3 สร้างเสียงลงช่องเวลาของไฟล์ SRT ได้ เหมาะกับงานที่มี timing อยู่แล้ว</p></div>
+    <div class="card"><h4>pyVideoTrans</h4><p class="who">GPL-3.0 · 19.6k stars</p><p style="margin:0;font-size:14.5px">สำหรับแปลและพากย์วิดีโอที่มีเสียงพูดอยู่แล้ว ส่วน Voicebox (58.2k stars) ดังที่สุดแต่ชุดภาษาไม่มีไทย</p></div>
+  </div>
+  <p class="cap">ไม่มี benchmark ความเร็วบน M5 Max สำหรับโมเดลใดเลย ตัวเลขเดียวที่พบคือ VoxCPM2 บน M4 Pro ผ่าน llama.cpp ได้ RTF ราว 1.76 ซึ่งช้ากว่า real time จึงต้องวัดเอง</p>
+
+  <h3>ถ้าต้องอยู่ใน Azure</h3>
+  <div class="grid g3">
+    <div class="card"><h4>เสียง neural th-TH</h4><p style="margin:0;font-size:14.5px">ใช้ได้กับ narration เรียบ ๆ แต่เสียง HD (DragonHD) ไม่มี persona ไทย และไม่ยืนยันว่า style อารมณ์ใช้กับไทยได้</p></div>
+    <div class="card"><h4>Personal Voice</h4><p style="margin:0;font-size:14.5px">โคลนจากเสียง 5–90 วินาที ต้องยื่นแบบฟอร์มขอสิทธิ์และมีเสียงบันทึกการยินยอม ส่วน Custom Neural Voice แพงระดับองค์กร ราว $2,900 ต่อเดือนต่อ endpoint (ตัวเลข third-party)</p></div>
+    <div class="card"><h4>Self-host VoxCPM2 บน GPU</h4><p style="margin:0;font-size:14.5px">โมเดล Apache-2.0 ต้องการ VRAM ราว 8 GB เป็นข้อเสนอของงานวิจัยนี้ ยังไม่มีเอกสารที่ทดสอบบน Azure จริง Azure STT ไทยใช้ทำ QA และซับไตเติลได้ดี</p></div>
+  </div>
+
+  <h3>กฎหมายและการเปิดเผย</h3>
+  <ul class="clean" style="max-width:50em">
+    <li><b>โคลนเสียงตัวเองปลอดภัยที่สุด</b> YouTube จัดเป็นการใช้งานเล็กน้อยที่ไม่ต้องเปิดเผย แต่เนื้อหาสมจริงที่ทำให้คนจริงดูเหมือนพูดสิ่งที่ไม่ได้พูดต้องเปิดเผย</li>
+    <li><b>เสียงคนอื่นต้องมีความยินยอม</b> PDPA มาตรา 26 คุ้มครองข้อมูลชีวมิติแต่ไม่ได้ระบุเสียงตรง ๆ การขอความยินยอมเป็นลายลักษณ์อักษรเป็นการตีความแบบระวัง งานเชิงพาณิชย์ควรปรึกษานักกฎหมาย</li>
+    <li><b>โมเดลที่รันเองไม่มีด่านตรวจ</b> ไม่มี consent check หรือ watermark ความรับผิดชอบอยู่ที่ผู้ใช้ทั้งหมด</li>
+  </ul>
+
+  <p class="src">แหล่งอ้างอิง:
+    <a href="https://github.com/Blaizzy/mlx-audio" target="_blank" rel="noopener">mlx-audio</a> ·
+    <a href="https://github.com/diodiogod/TTS-Audio-Suite" target="_blank" rel="noopener">TTS Audio Suite</a> ·
+    <a href="https://github.com/jianchang512/pyvideotrans" target="_blank" rel="noopener">pyVideoTrans</a> ·
+    <a href="https://github.com/jamiepine/voicebox" target="_blank" rel="noopener">Voicebox</a> ·
+    <a href="https://www.remotion.dev/docs/ai/skills" target="_blank" rel="noopener">Remotion Agent Skills</a> ·
+    <a href="https://elevenlabs.io/docs/api-reference/text-to-speech/convert-with-timestamps" target="_blank" rel="noopener">ElevenLabs timestamps</a> ·
+    <a href="https://mfa-models.readthedocs.io/en/latest/acoustic/Thai/Thai%20MFA%20acoustic%20model%20v3_0_0.html" target="_blank" rel="noopener">MFA Thai model</a> ·
+    <a href="https://ayosec.github.io/ffmpeg-filters-docs/7.1/Filters/Audio/atempo.html" target="_blank" rel="noopener">ffmpeg atempo</a> ·
+    <a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/high-definition-voices" target="_blank" rel="noopener">Azure HD voices</a> ·
+    <a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/personal-voice-overview" target="_blank" rel="noopener">Azure Personal Voice</a> ·
+    <a href="https://support.google.com/youtube/answer/14328491" target="_blank" rel="noopener">YouTube disclosure</a> ·
+    <a href="https://pdpathailand.com/pdpa/content_eng/article26_eng.php" target="_blank" rel="noopener">PDPA มาตรา 26</a>
+  </p>
+</section>
+
+<section id="gaps">
+  <p class="eyebrow">10</p>
+  <h2>สิ่งที่ยังไม่ยืนยัน และควรทดสอบเอง</h2>
+  <p class="sub">หลักฐานภาษาไทยเกือบทั้งหมดเป็นตัวเลขที่ผู้พัฒนารายงานเองบนชุดทดสอบของตัวเอง ข้อด้านล่างกระทบการตัดสินใจโดยตรง</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>ช่องว่างของหลักฐาน</h4>
+      <ul class="clean" style="font-size:14.5px">
+        <li>ไม่มีการเทียบ VoxCPM2 กับ OmniVoice, MOSS-TTS, Higgs v3 หรือ Drama 3 บนภาษาไทยแบบอิสระ</li>
+        <li>ไม่มีแหล่งใดวัดว่า emotion tag ได้ผลแค่ไหนกับข้อความไทย</li>
+        <li>ไม่มี leaderboard ไทยที่เป็นกลางซึ่งรวมเจ้า commercial ไว้ด้วยกัน</li>
+        <li>JaiTTS-v1.0 ยังไม่ยืนยันว่าเปิด weights และ licence ของ weights OmniVoice ยังไม่ได้ตรวจ</li>
+        <li>ราคาทางการของ Azure Speech และแพ็กเกจบาทของ Botnoi อ่านไม่ได้ตอนเก็บข้อมูล</li>
+        <li>ไม่พบรีวิวจากการฟังจริงของชุมชนผู้ใช้ไทย และไม่มี benchmark บน M5 Max</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--sec)">
+      <h4>แผนทดสอบครึ่งวันบน M5 Max</h4>
+      <p style="font-size:14.5px;margin:0">ให้ข้อมูลตรงกับงานของคุณมากกว่า benchmark ที่มีอยู่ทั้งหมด</p>
+      <ul class="clean" style="font-size:14.5px">
+        <li>เตรียมสคริปต์จริงราว <b>20 ประโยค</b> ที่มีตัวเลข คำทับศัพท์ และ 3 อารมณ์</li>
+        <li>รันผ่าน <b>VoxCPM2</b>, <b>VoxCPM2 + SiangTTS</b>, <b>OmniVoice</b>, <b>Audio8-TTS-Realistic</b> และ <b>ElevenLabs v4</b></li>
+        <li>ฟังเทียบ: อ่านถูกไหม อารมณ์ตรงไหม เสียงเหมือนต้นแบบไหม ใช้เวลาเท่าไร</li>
+        <li>ควรทำก่อน <b>1 ม.ค. 2027</b> ซึ่งราคา Gemini ขึ้นเท่าตัวและ endpoint ของ OpenAI ปิด</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="in">รายงานนี้สังเคราะห์จากการค้นคว้าเว็บ ณ 14 พฤศจิกายน 2026 ราคาและอันดับเปลี่ยนเร็ว ควรตรวจหน้าทางการก่อนตัดสินใจ</div></footer>
+
+<script>
+(function(){
+  var el=function(id){return document.getElementById(id)};
+
+  // header waveform, fixed shape
+  var w=el('wave'),h='';
+  for(var i=0;i<96;i++){var v=Math.abs(Math.sin(i*0.37)*Math.sin(i*0.11+1)*0.8+Math.sin(i*1.3)*0.2);h+='<i style="height:'+Math.round(10+v*90)+'%;background:hsl('+Math.round(335+i*2.9)+' 85% 58%)"></i>'}
+  w.innerHTML=h;
+
+
+  var D={2:'<i class="d full" title="ทำได้"></i>',1:'<i class="d half" title="บางส่วน"></i>',0:'<i class="d none" title="ทำไม่ได้"></i>','?':'<i class="d unk" title="ยังไม่ยืนยัน">?</i>'};
+  // name, sub, thai, clone, emotion, duration, commercial, local, highlight
+  var mx=[
+    ['Open source'],
+    ['VoxCPM2','Apache-2.0',2,2,1,0,2,2,'ครบที่สุดในฝั่งเปิด ฝึก LoRA ด้วยเสียงตัวเองได้'],
+    ['VoxCPM2 + SiangTTS','Thai LoRA',2,2,1,0,1,1,'อ่านไทยแม่นขึ้นจาก base ในการทดสอบของผู้พัฒนา'],
+    ['OmniVoice','646 ภาษา',2,2,1,2,'?',2,'สั่งความยาวเสียงต่อ scene ได้ และเร็วมาก'],
+    ['Audio8-TTS-Realistic','Apache-2.0 · ใหม่',1,2,'?','?',2,'?','เล็ก (0.6B) เน้น prosody เป็นธรรมชาติ เพิ่งเพิ่มไทย'],
+    ['ZONOS3-Mini','Apache-2.0 · ใหม่','?',2,2,'?',2,'?','คุมอารมณ์ ความเร็ว เสียงกระซิบ ได้ถึงระดับคำ'],
+    ['Ming-3.0 TTS','MIT · ใหม่','?',2,2,'?',2,'?','expressive tag 14 แบบ และออกแบบเสียงได้'],
+    ['Fish Audio Drama 3','เพดานรายได้ $500k','?',2,2,'?',1,2,'open weights คะแนนสูงสุด แก้เฉพาะคำได้'],
+    ['Higgs Audio v3','Non-commercial',1,2,2,'?',0,2,'tag อารมณ์ สไตล์ และเสียงประกอบละเอียด'],
+    ['MOSS-TTS v1.5','Apache-2.0',1,'?',0,2,2,2,'คุมความยาวด้วยจำนวน token ไม่มีระบบอารมณ์'],
+    ['Chatterbox V3','MIT',0,2,1,0,2,2,'slider ความเข้มอารมณ์ ใช้กับอังกฤษ เลิกอัปเดตแล้ว'],
+    ['IndexTTS-2.5','bilibili licence',0,2,2,2,1,1,'แยกอารมณ์ออกจากเสียงผู้พูดได้ดีที่สุด'],
+    ['IndexTTS-2 Thai LoRA','ชุมชน · dubbing-ai',1,2,1,0,0,0,'ทางเดียวที่ได้ระบบอารมณ์ IndexTTS ในไทย ยังไม่มีผลวัด'],
+    ['Commercial'],
+    ['ElevenLabs v4','$80 ต่อ 1M ตัวอักษร',2,2,2,1,2,0,'คุณภาพอันดับ 1 มี timestamp ระดับตัวอักษร'],
+    ['Gemini 3.8 Flash TTS','ราว $0.81 ต่อชม.',2,1,2,'?',2,0,'ถูกที่สุดในกลุ่มที่คุม style ได้'],
+    ['MiniMax speech-2.8','$60–100 ต่อ 1M',2,2,1,'?','?',0,'emotion เลือกจาก 7 ค่า ทำซ้ำได้คงที่'],
+    ['iApp Chinda TTS','ราว 200 บาทต่อ 1M',2,2,1,'?','?',0,'ทำมาเพื่อไทย อ่านตัวเลข วันที่ ได้เอง'],
+    ['Botnoi Voice','คิดเป็น points',2,1,'?','?','?',0,'ออกเสียงไทยดีที่สุดในรีวิวไทย มีภาษาถิ่น'],
+    ['Azure Speech','th-TH neural',2,1,0,'?',2,0,'อยู่ใน governance ของ Azure เดิม']
+  ];
+  var cols=['โมเดล','ภาษาไทย','โคลนเสียง','คุมอารมณ์','ล็อกความยาว','เชิงพาณิชย์','รันในเครื่อง','จุดเด่น'];
+  el('mx').innerHTML='<thead><tr>'+cols.map(function(c){return '<th>'+c+'</th>'}).join('')+'</tr></thead><tbody>'+mx.map(function(r){
+    if(r.length==1)return '<tr class="sep"><td colspan="8">'+r[0]+'</td></tr>';
+    return '<tr><td>'+r[0]+'<small>'+r[1]+'</small></td>'+[2,3,4,5,6,7].map(function(k){return '<td>'+D[r[k]]+'</td>'}).join('')+'<td>'+r[8]+'</td></tr>'}).join('')+'</tbody>';
+
+  var scn=[
+    ['พากย์ไทยด้วยเสียงโคลนของตัวเอง รันบน Mac ใช้เชิงพาณิชย์ได้','VoxCPM2 + SiangTTS LoRA','licence เปิด มี style prompt และ SiangTTS อ่านไทยแม่นกว่าในการทดสอบขนาดเล็ก','LoRA เป็น share-alike อ่อนคำบาลี-สันสกฤต และให้รันผ่าน PyTorch MPS'],
+    ['คลิป Motion ที่ export แล้ว ความยาวตายตัว','OmniVoice','กำหนดความยาวเสียงต่อ scene ได้ตรง ๆ ด้วย <code>duration</code> และเร็ว','ตรวจ licence ของ weights ก่อน แปลงตัวเลขเป็นคำ และฟังหาการหยุดกลางคำ'],
+    ['ต้องการอารมณ์จัดจ้านในภาษาไทย ยอมจ่าย','ElevenLabs v4','อันดับ 1 บน arena สั่งด้วย tag ผสมคำบรรยาย และมี timestamp ระดับตัวอักษร เริ่มทดสอบที่ Starter $6','ต้องตั้ง <code>model_id</code> เอง ราคา $80 ต่อ 1 ล้านตัวอักษร'],
+    ['ปริมาณมาก ต้นทุนต่ำ ยังคุม style ได้','Gemini 3.8 Flash TTS','ราว $0.81 ต่อชั่วโมงเสียง และรุ่นก่อนหน้าได้ CER ไทยดีที่สุดในงานวิจัยอิสระ','ราคาขึ้นเท่าตัว 1 ม.ค. 2027 และความเหมือนเสียงต้นแบบต่ำสุดในการทดสอบนั้น'],
+    ['อยากให้อ่านไทยถูกโดยแก้สคริปต์น้อยที่สุด','iApp Chinda TTS หรือ Botnoi Voice','ทำมาเพื่อไทย อ่านตัวเลข วันที่ สกุลเงินได้เอง ราคาถูกมาก ลอง demo JaiTTS ประกอบ','เงื่อนไขใช้เชิงพาณิชย์ยังไม่ยืนยัน และ JaiTTS ไม่มี API'],
+    ['ต้องอยู่ใน Azure tenant','เสียง neural th-TH และยื่นขอ Personal Voice','อยู่ใน governance เดิมขององค์กร','อารมณ์กับไทยไม่ยืนยัน มีเวลารออนุมัติ และต้องตรวจราคาเอง'],
+    ['Narration ภาษาอังกฤษ รันในเครื่อง','VoxCPM2 หรือ Chatterbox','ตัวเลือกอังกฤษมีมากกว่าไทยมาก ใช้ IndexTTS-2.5 ถ้าต้องการอารมณ์ละเอียด','Chatterbox ฝัง watermark และเลิกอัปเดตแล้ว ส่วน IndexTTS ใช้ licence ของ bilibili ที่ต้องส่งต่อเงื่อนไข'],
+    ['ทดลองคุมอารมณ์แบบ open weights','Fish Audio Drama 3 หรือ Higgs Audio v3','ระบบ tag แข็งที่สุดในฝั่ง open รันผ่าน mlx-audio ได้','ติดเพดานรายได้ $500k หรือ non-commercial และไทยต้องฟังทดสอบเอง']
+  ];
+  el('scn').innerHTML=scn.map(function(s){return '<div class="card scn"><p class="when">'+s[0]+'</p><p class="use">'+s[1]+'</p><p class="why">'+s[2]+'</p><p class="care"><b>ระวัง</b> '+s[3]+'</p></div>'}).join('');
+
+  // name, maker, verdict[class,text], licence[class,text], better, limit, evidence
+  var alts=[
+    ['SiangTTS','Thai LoRA บน VoxCPM2',['good','ควรลองก่อนตัวอื่น'],['warn','CC-BY-SA ใช้ได้แบบ share-alike'],'อ่านไทยแม่นกว่า base','ฝึกแค่ราว 205 ชม. อ่อนคำบาลี-สันสกฤตหายาก','CER 0.84% เทียบ base 3.26% (80 prompts ผู้พัฒนาวัดเอง)'],
+    ['OmniVoice','k2-fsa · 646 ภาษา',['good','ดีกว่าเรื่องล็อกความยาว'],['warn','code Apache-2.0, weights ยังไม่ตรวจ'],'มี <code>duration</code> กำหนดความยาวเสียง และเร็วมาก','หยุดกลางคำไทย 5.2% บางครั้งอ่านตัวเลขเป็นภาษาจีน','ข้อมูลฝึกไทยราว 10,500 ชม. CER 4.6% ในงานวิจัยอิสระ'],
+    ['Fish Audio Drama 3','open weights อันดับ 1 บน arena',['warn','ดีกว่าด้านอารมณ์ (อังกฤษ)'],['warn','รายได้ต่อปีไม่เกิน $500k'],'tag อิสระ แก้เฉพาะคำ สั่งแก้ take เดิมได้','โมเดลใหญ่ 35B และไม่มีไทยในรายการทางการ','ไม่มีตัวเลขไทย รุ่นก่อนแพ้ VoxCPM2 บนไทย'],
+    ['Higgs Audio v3','Boson AI',['warn','น่าลองกับงานส่วนตัว'],['bad','Non-commercial มี Creator Use Grant'],'tag อารมณ์ สไตล์ prosody และ sfx ละเอียดกว่า','อันดับ 13 ในกลุ่ม open weights (ทดสอบอังกฤษ)','ผู้พัฒนาอ้างไทย CER ต่ำกว่า 5 ไม่มีตัวเลขอิสระ'],
+    ['JaiTTS-v1.0','Jasmine Technology Solution',['warn','ใช้ได้แค่ demo'],['bad','ไม่ยืนยันว่าเปิด weights'],'ตัวเลขไทยดีที่สุดที่ตีพิมพ์ อ่านตัวเลขและไทยปนอังกฤษได้เอง','ไม่มี emotion control ไม่มี API ไม่เคยเทียบกับ VoxCPM2','CER 1.94% ใกล้เสียงมนุษย์ (1.98%) ทีมวัดเอง'],
+    ['MOSS-TTS v1.5','OpenMOSS',['mute','ยังไม่มีเหตุให้ย้าย'],['good','Apache-2.0'],'คุมความยาวด้วยจำนวน token','ไม่มี emotion control','ระบุรองรับไทย แต่ไม่พบตัวเลขวัดผลเลย'],
+    ['Qwen3-TTS','Alibaba',['mute','ไม่ดีกว่า'],['good','Apache-2.0'],'ไม่มีที่ชัดเจน','ช้ากว่า real time ในการทดสอบ รุ่นโคลนไม่รับคำสั่งอารมณ์','ไทยไม่เป็นทางการ CER 2.56%'],
+    ['F5-TTS-THAI และ OpenJaiTTS','ฐาน F5-TTS รุ่นปี 2025',['bad','ด้อยกว่า'],['bad','เสี่ยง หรือ non-commercial'],'เล็กและเบา','ข้อความยาวอ่านผิดมาก ไม่มี emotion parameter','OpenJaiTTS CER พุ่งจาก 4.78% เป็น 12.63% เมื่อข้อความยาว']
+  ];
+  el('alts').innerHTML=alts.map(function(a){return '<div class="card"><div class="pills"><span class="pill p-'+a[2][0]+'">'+a[2][1]+'</span><span class="pill p-'+a[3][0]+'">'+a[3][1]+'</span></div><h4>'+a[0]+'</h4><p class="who">'+a[1]+'</p><dl class="kv"><dt>ดีกว่า</dt><dd>'+a[4]+'</dd><dt>ข้อจำกัด</dt><dd>'+a[5]+'</dd><dt>หลักฐานไทย</dt><dd>'+a[6]+'</dd></dl></div>'}).join('');
+
+  // label, note, value, text, soft
+  var bars=[
+    ['Gemini 3.8 Flash TTS','ขึ้นเป็น $1.62 ปี 2027',0.81,'$0.81',0],
+    ['Azure Speech neural','third-party',0.90,'~$0.90',1],
+    ['Google Chirp 3 HD','',1.80,'$1.80',0],
+    ['Cartesia Sonic 3.6','$1.80–3.00 ตามแผน',2.40,'$1.80–3.00',0],
+    ['Fish Audio S2.1-Pro','ข้อความไทย',2.70,'$2.70',0],
+    ['MiniMax 2.8 turbo','',3.60,'$3.60',0],
+    ['ElevenLabs v3/v4 API','',4.80,'$4.80',0],
+    ['MiniMax 2.8 hd','',6.00,'$6.00',0],
+    ['ElevenLabs แผนรายเดือน','Creator / Pro',10.5,'~$10–11',0]
+  ];
+  el('bars').innerHTML=bars.map(function(b){return '<div class="bar"><div>'+b[0]+(b[1]?' <small>'+b[1]+'</small>':'')+'</div><div class="track"><div class="fill'+(b[4]?' soft':'')+'" style="width:'+(b[2]/11*100).toFixed(1)+'%"></div></div><div class="v">'+b[3]+'</div></div>'}).join('');
+
+  // name, thai pill, how, price, clone, commercial
+  var ven=[
+    ['ElevenLabs v3 / v4',['good','มีไทย'],'รายเดือนเป็น credits หรือ API ต่อตัวอักษร','API $80 ต่อ 1 ล้านตัวอักษร (v4 Turbo $40) · Free 10k · Starter $6/30k · Creator $22/121k · Pro $99/600k · Scale $299/1.8M','Instant ตั้งแต่ Starter · Professional ตั้งแต่ Creator เฉพาะเสียงตัวเอง','ตั้งแต่ Starter'],
+    ['Gemini 3.8 Flash TTS',['good','มีไทย'],'ต่อ token (25 audio tokens ต่อวินาที)','$0.50 เข้า / $9 ออก ต่อ 1 ล้าน tokens ถึง 31 ธ.ค. 2026 แล้วขึ้นเป็น $1 / $18','Voice replication ใช้เสียงอ้างอิงและเสียงยินยอม','Cloud API'],
+    ['MiniMax speech-2.8',['good','มีไทย'],'จ่ายตามใช้ต่อตัวอักษร หรือแพ็ก points','hd $100 และ turbo $60 ต่อ 1 ล้านตัวอักษร · แพ็ก $5–$999','$1.50 ต่อเสียง คิดเมื่อใช้ครั้งแรก','ไม่พบเงื่อนไข'],
+    ['Google Chirp 3 HD',['good','มีไทย'],'ต่อตัวอักษร','$30 ต่อ 1 ล้านตัวอักษร ฟรี 1 ล้านต่อเดือน · Instant Custom Voice $60','เฉพาะลูกค้าที่ได้รับอนุมัติ','Cloud API'],
+    ['Cartesia Sonic 3.6',['good','มีไทย'],'credits (1 credit ต่อตัวอักษร)','Free 20K · Pro $5/100K · Startup $49/1.25M · Scale $299/8M','Instant ตั้งแต่ Pro','ตั้งแต่ Pro'],
+    ['Fish Audio S2.1-Pro / Drama 3',['warn','ไทยไม่ยืนยัน'],'API ต่อ UTF-8 byte · แอปเป็น credits','S2.1-Pro $15 และ Drama 3 $50 ต่อ 1 ล้าน bytes · Plus $15 และ Pro $100 ต่อเดือน','รวมในแผน','Plus ขึ้นไป'],
+    ['iApp Chinda TTS',['good','Thai-first'],'เครดิต IC หรือแพ็กรายเดือน','Voice S 500 บาท/2.5M ตัวอักษร · M 1,000/7.5M · L 2,500/25M (ไม่รวม VAT)','จากเสียงราว 10–20 วินาที','ไม่ยืนยัน'],
+    ['Botnoi Voice',['good','Thai-first'],'points ต่อตัวอักษร','V1 1 point · V2, V4 และเสียงโคลน 2 points · สมาชิกจ่ายครึ่ง · API หนึ่งในสิบ · แผนราว 299 และ 899 บาทต่อเดือน (third-party)','มี คิด 2 points ต่อตัวอักษร','ไม่ยืนยัน'],
+    ['Azure Speech',['good','มีไทย'],'ต่อตัวอักษร ฟรี 0.5 ล้านต่อเดือน','ราคาทางการอ่านไม่ได้ · third-party ระบุ $15 ต่อ 1 ล้านตัวอักษร','Personal Voice ต้องยื่นขอสิทธิ์','Cloud API'],
+    ['OpenAI gpt-4o-mini-tts',['bad','ปิด 6 ม.ค. 2027'],'ต่อ token','$0.60 เข้า / $12 เสียงออก ต่อ 1 ล้าน tokens','ต้องขออนุมัติ','ไม่ควรเริ่มใช้ใหม่']
+  ];
+  el('vendors').innerHTML=ven.map(function(v){return '<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap"><h4>'+v[0]+'</h4><span class="pill p-'+v[1][0]+'">'+v[1][1]+'</span></div><dl class="kv"><dt>คิดเงิน</dt><dd>'+v[2]+'</dd><dt>ราคา</dt><dd>'+v[3]+'</dd><dt>โคลนเสียง</dt><dd>'+v[4]+'</dd><dt>เชิงพาณิชย์</dt><dd>'+v[5]+'</dd></dl></div>'}).join('');
+
+  var stars=[['GPT-SoVITS',61.2,0],['VibeVoice',53.7,0],['VoxCPM',40.6,1],['OpenVoice',38.2,0],['Fish Speech',33.5,0],['Chatterbox',27.1,0],['IndexTTS',25.1,0],['CosyVoice',24.2,0],['OmniVoice',16.3,1]];
+  el('stars').innerHTML=stars.map(function(s){return '<div class="bar" style="grid-template-columns:8em minmax(0,1fr) 3.6em"><div>'+(s[2]?'<b>'+s[0]+'</b>':s[0])+'</div><div class="track" style="order:0;grid-column:auto"><div class="fill" style="width:'+(s[1]/61.2*100).toFixed(1)+'%;'+(s[2]?'':'opacity:.45')+'"></div></div><div class="v">'+s[1]+'k</div></div>'}).join('');
+})();
+</script>
+</body>
+</html>
