@@ -1,0 +1,4 @@
+# VoxCPM2 + the Whisper used to check takes, at the versions this skill was tested with.
+# mlx-whisper runs on Apple Silicon only; on Linux/CUDA install voxcpm alone and skip check_takes.py.
+voxcpm==2.0.3
+mlx-whisper==0.4.3; sys_platform == "darwin" and platform_machine == "arm64"

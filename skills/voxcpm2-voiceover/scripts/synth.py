@@ -120,10 +120,14 @@ def main() -> int:
             print(f"note: Hi-Fi mode ignores instructions; dropped them from lines {with_instr}. "
                   "Use --no-transcript to apply them.", file=sys.stderr)
 
-    import numpy as np
-    import soundfile as sf
-    import torch
-    from voxcpm import VoxCPM
+    try:
+        import numpy as np
+        import soundfile as sf
+        import torch
+        from voxcpm import VoxCPM
+    except ImportError as e:
+        sys.exit(f"{e.name} is not installed in {sys.executable}. Run this with the venv that has voxcpm; "
+                 "to find or make one: python3 doctor.py --find")
 
     a.out.mkdir(parents=True, exist_ok=True)
     model_id = str(Path(a.model).expanduser()) if Path(a.model).expanduser().is_dir() else a.model

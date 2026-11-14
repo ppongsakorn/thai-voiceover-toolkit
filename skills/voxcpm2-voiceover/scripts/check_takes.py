@@ -6,7 +6,8 @@
 
 A take is matched to its line by its file name: s<line>_... or s<line>.<ext> (what synth.py writes).
 An "(instruction)" at the start of a script line is not counted. CER is a hint, not a verdict: it misses wrong
-tones, and words spelled phonetically in Thai (e.g. "โคไพล็อต") score as errors when Whisper writes them in English.
+tones, and some correct readings score as errors: words spelled phonetically in Thai (e.g. "โคไพล็อต") that
+Whisper writes in English, and number words ("สองร้อยเก้าสิบเก้า") that Whisper writes as digits ("299").
 """
 
 from __future__ import annotations
@@ -58,7 +59,11 @@ def main() -> int:
     if not a.words and not a.lines:
         sys.exit("give --lines script.txt (CER) or --words (word timings)")
 
-    import mlx_whisper
+    try:
+        import mlx_whisper
+    except ImportError:
+        sys.exit(f"mlx-whisper is not installed in {sys.executable} (Apple Silicon only): "
+                 "pip install mlx-whisper==0.4.3, or check with python3 doctor.py")
 
     lines = read_lines(a.lines) if a.lines else []
     best: dict[int, tuple[float, str]] = {}
@@ -76,8 +81,11 @@ def main() -> int:
             print(f"{f!s:{width}s} (no matching line) {text}", flush=True)
             continue
         n = int(m.group(1))
-        score = cer(INSTRUCTION.sub("", lines[n - 1]), text)
+        ref = INSTRUCTION.sub("", lines[n - 1])
+        score = cer(ref, text)
         flag = "  ← listen closely" if score > 0.05 else ""
+        if re.search(r"\d", text) and not re.search(r"\d", ref):
+            flag += "  (Whisper wrote digits for number words: check the number by ear)"
         print(f"{f!s:{width}s} CER {score:.2f} | {text}{flag}", flush=True)
         if n not in best or score < best[n][0]:
             best[n] = (score, str(f))

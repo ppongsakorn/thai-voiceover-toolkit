@@ -5,6 +5,8 @@
 secrets/
 
 # voice samples and generated audio stay out of the repo
+# local/ = material kept only on this machine (e.g. third-party voice samples that must not be published)
+local/
 voices/
 *.wav
 *.mp3
