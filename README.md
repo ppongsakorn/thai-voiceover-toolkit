@@ -4,7 +4,7 @@ Skills, tools, and research for AI voiceover and voice cloning, with a focus on 
 
 รวม skill เครื่องมือ และงานค้นคว้า สำหรับงานพากย์เสียงและโคลนเสียงด้วย AI เน้นภาษาไทยเป็นหลัก และรองรับภาษาอังกฤษ
 
-> สถานะ: เพิ่งเริ่มต้น ตอนนี้มีเฉพาะงานค้นคว้าและเกณฑ์ทดสอบ ส่วน skill และ tools ยังไม่มีโค้ด
+> สถานะ: เพิ่งเริ่มต้น มีงานค้นคว้า เกณฑ์ทดสอบ และ skill แรกสำหรับ VoxCPM2 ส่วน tools ยังไม่มีโค้ด
 
 ## โครงสร้าง
 
@@ -12,7 +12,7 @@ Skills, tools, and research for AI voiceover and voice cloning, with a focus on 
 |---|---|---|
 | [`research/`](research/) | รายงานและบันทึกการค้นคว้าเรื่อง TTS และ voice cloning | มีรายงานชุดแรก (14 พ.ย. 2026) |
 | [`eval/`](eval/) | เกณฑ์คุณภาพเสียงและแผนฟังเทียบ | มีเกณฑ์ ยังไม่มีผลทดสอบ |
-| [`skills/`](skills/) | skill สำหรับ AI agent หนึ่งโฟลเดอร์ต่อหนึ่ง skill | ยังว่าง |
+| [`skills/`](skills/) | skill สำหรับ AI agent หนึ่งโฟลเดอร์ต่อหนึ่ง skill | มี `voxcpm2-voiceover` |
 | [`tools/`](tools/) | เครื่องมือที่รันเองได้ | ยังว่าง |
 | [`examples/`](examples/) | สคริปต์ตัวอย่างพร้อมผลลัพธ์ | ยังว่าง |
 
